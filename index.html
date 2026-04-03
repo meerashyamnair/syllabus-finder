@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Syllabus Finder</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #141720;
+    --surface2: #1c2030;
+    --border: #2a2f45;
+    --accent: #5b8af7;
+    --accent2: #a78bfa;
+    --text: #e8eaf6;
+    --muted: #8b90a8;
+    --success: #34d399;
+    --tag-bg: #1e2540;
+    --tag-text: #a5b4fc;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* Grid noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(91,138,247,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(91,138,247,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 60px 24px 80px;
+  }
+
+  header {
+    margin-bottom: 56px;
+  }
+
+  .badge {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+
+  h1 span {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.6;
+    max-width: 520px;
+    font-weight: 300;
+  }
+
+  /* Search card */
+  .search-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    margin-bottom: 40px;
+  }
+
+  .fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 560px) {
+    .fields { grid-template-columns: 1fr; }
+  }
+
+  .field-label {
+    display: block;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    padding: 12px 16px;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238b90a8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    transition: border-color 0.2s;
+  }
+
+  select:focus { outline: none; border-color: var(--accent); }
+  select option { background: #1c2030; }
+
+  .search-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, var(--accent), #7c73f7);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .search-btn:hover { opacity: 0.9; }
+  .search-btn:active { transform: scale(0.99); }
+
+  /* SQL panel */
+  .sql-panel {
+    background: #0a0c10;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+    display: none;
+  }
+
+  .sql-panel.visible { display: block; }
+
+  .sql-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .sql-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .sql-dot.red { background: #ff5f57; }
+  .sql-dot.yellow { background: #febc2e; }
+  .sql-dot.green { background: #28c840; }
+
+  .sql-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: auto;
+    letter-spacing: 0.06em;
+  }
+
+  pre {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #cdd6f4;
+    white-space: pre-wrap;
+  }
+
+  .kw { color: #89b4fa; }
+  .str { color: #a6e3a1; }
+  .num { color: #fab387; }
+  .cm { color: #585b70; }
+
+  /* Results */
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .results-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .results-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .course-grid {
+    display: grid;
+    gap: 14px;
+  }
+
+  .course-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    gap: 16px;
+    transition: border-color 0.2s, transform 0.2s;
+    animation: fadeUp 0.35s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .course-card:hover {
+    border-color: rgba(91,138,247,0.4);
+    transform: translateY(-2px);
+  }
+
+  .course-code {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .course-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 17px;
+    margin-bottom: 8px;
+  }
+
+  .course-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tag {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .tag-type { background: var(--tag-bg); color: var(--tag-text); border: 1px solid #2d3460; }
+  .tag-credits { background: #1a2a1a; color: var(--success); border: 1px solid #243224; }
+  .tag-elective { background: #2a1a2a; color: #c084fc; border: 1px solid #3d2850; }
+
+  .credits-badge {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 24px;
+    color: var(--accent);
+    text-align: right;
+    line-height: 1;
+  }
+
+  .credits-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: right;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+
+  .empty-icon {
+    font-size: 40px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  .schema-section {
+    margin-top: 64px;
+    border-top: 1px solid var(--border);
+    padding-top: 48px;
+  }
+
+  .schema-section h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .schema-section p {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 24px;
+    line-height: 1.6;
+  }
+
+  .schema-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .schema-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+  }
+
+  .schema-table-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .schema-table-name::before {
+    content: '';
+    display: block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .schema-field {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .schema-field:last-child { border-bottom: none; }
+  .field-name { font-family: 'DM Mono', monospace; color: var(--text); }
+  .field-type { color: var(--muted); font-family: 'DM Mono', monospace; font-size: 11px; }
+  .pk { color: #febc2e; font-size: 10px; margin-left: 4px; }
+  .fk { color: #a78bfa; font-size: 10px; margin-left: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="badge">DBMS Project · SQL Integration</div>
+    <h1>Find Your<br><span>Syllabus</span></h1>
+    <p class="subtitle">Select your department and semester to retrieve courses from the database using SQL queries.</p>
+  </header>
+
+  <div class="search-card">
+    <div class="fields">
+      <div>
+        <label class="field-label" for="dept">Department</label>
+        <select id="dept">
+          <option value="">— Select Department —</option>
+          <option value="CSE">Computer Science & Engineering</option>
+          <option value="ECE">Electronics & Communication</option>
+          <option value="ME">Mechanical Engineering</option>
+          <option value="CE">Civil Engineering</option>
+          <option value="EEE">Electrical & Electronics</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label" for="sem">Semester</label>
+        <select id="sem">
+          <option value="">— Select Semester —</option>
+          <option value="1">Semester 1</option>
+          <option value="2">Semester 2</option>
+          <option value="3">Semester 3</option>
+          <option value="4">Semester 4</option>
+          <option value="5">Semester 5</option>
+          <option value="6">Semester 6</option>
+          <option value="7">Semester 7</option>
+          <option value="8">Semester 8</option>
+        </select>
+      </div>
+    </div>
+    <button class="search-btn" onclick="search()">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="7" cy="7" r="5" stroke="white" stroke-width="1.5"/>
+        <path d="M11 11l3 3" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      Run Query
+    </button>
+  </div>
+
+  <div class="sql-panel" id="sqlPanel">
+    <div class="sql-header">
+      <div class="sql-dot red"></div>
+      <div class="sql-dot yellow"></div>
+      <div class="sql-dot green"></div>
+      <span class="sql-label">Generated SQL · MySQL</span>
+    </div>
+    <pre id="sqlCode"></pre>
+  </div>
+
+  <div id="results"></div>
+
+  <!-- DB Schema Reference -->
+  <div class="schema-section">
+    <h2>Database Schema</h2>
+    <p>The tables below define the relational structure. Courses are joined with departments via <code style="color:var(--accent2);font-family:'DM Mono',monospace">department_id</code>.</p>
+    <div class="schema-grid">
+      <div class="schema-card">
+        <div class="schema-table-name">departments</div>
+        <div class="schema-field"><span class="field-name">dept_id<span class="pk">PK</span></span><span class="field-type">INT</span></div>
+        <div class="schema-field"><span class="field-name">dept_code</span><span class="field-type">VARCHAR(10)</span></div>
+        <div class="schema-field"><span class="field-name">dept_name</span><span class="field-type">VARCHAR(100)</span></div>
+      </div>
+      <div class="schema-card">
+        <div class="schema-table-name">courses</div>
+        <div class="schema-field"><span class="field-name">course_id<span class="pk">PK</span></span><span class="field-type">INT</span></div>
+        <div class="schema-field"><span class="field-name">course_code</span><span class="field-type">VARCHAR(15)</span></div>
+        <div class="schema-field"><span class="field-name">course_name</span><span class="field-type">VARCHAR(150)</span></div>
+        <div class="schema-field"><span class="field-name">dept_id<span class="fk">FK</span></span><span class="field-type">INT</span></div>
+        <div class="schema-field"><span class="field-name">semester</span><span class="field-type">INT</span></div>
+        <div class="schema-field"><span class="field-name">credits</span><span class="field-type">INT</span></div>
+        <div class="schema-field"><span class="field-name">course_type</span><span class="field-type">ENUM</span></div>
+        <div class="schema-field"><span class="field-name">is_elective</span><span class="field-type">BOOLEAN</span></div>
+      </div>
+    </div>
+
+    <div class="sql-panel visible" style="margin-top: 24px;">
+      <div class="sql-header">
+        <div class="sql-dot red"></div><div class="sql-dot yellow"></div><div class="sql-dot green"></div>
+        <span class="sql-label">CREATE TABLE statements</span>
+      </div>
+      <pre><span class="kw">CREATE TABLE</span> departments (
+  dept_id   <span class="kw">INT PRIMARY KEY AUTO_INCREMENT</span>,
+  dept_code <span class="kw">VARCHAR</span>(<span class="num">10</span>) <span class="kw">NOT NULL UNIQUE</span>,
+  dept_name <span class="kw">VARCHAR</span>(<span class="num">100</span>) <span class="kw">NOT NULL</span>
+);
+
+<span class="kw">CREATE TABLE</span> courses (
+  course_id   <span class="kw">INT PRIMARY KEY AUTO_INCREMENT</span>,
+  course_code <span class="kw">VARCHAR</span>(<span class="num">15</span>) <span class="kw">NOT NULL</span>,
+  course_name <span class="kw">VARCHAR</span>(<span class="num">150</span>) <span class="kw">NOT NULL</span>,
+  dept_id     <span class="kw">INT</span>,
+  semester    <span class="kw">INT NOT NULL</span>,
+  credits     <span class="kw">INT NOT NULL</span>,
+  course_type <span class="kw">ENUM</span>(<span class="str">'Theory'</span>, <span class="str">'Lab'</span>, <span class="str">'Project'</span>) <span class="kw">DEFAULT</span> <span class="str">'Theory'</span>,
+  is_elective <span class="kw">BOOLEAN DEFAULT</span> <span class="num">FALSE</span>,
+  <span class="kw">FOREIGN KEY</span> (dept_id) <span class="kw">REFERENCES</span> departments(dept_id)
+);</pre>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Mock Database (simulates what MySQL would return) ──────────────────────
+const DB = {
+  CSE: {
+    1: [
+      { code: 'CSE101', name: 'Fundamentals of Computing', credits: 4, type: 'Theory', elective: false },
+      { code: 'MAT101', name: 'Engineering Mathematics I', credits: 4, type: 'Theory', elective: false },
+      { code: 'PHY101', name: 'Engineering Physics', credits: 3, type: 'Theory', elective: false },
+      { code: 'CSE102', name: 'Programming Lab (C)', credits: 2, type: 'Lab', elective: false },
+    ],
+    2: [
+      { code: 'CSE201', name: 'Data Structures', credits: 4, type: 'Theory', elective: false },
+      { code: 'MAT201', name: 'Engineering Mathematics II', credits: 4, type: 'Theory', elective: false },
+      { code: 'CSE202', name: 'Digital Logic Design', credits: 3, type: 'Theory', elective: false },
+      { code: 'CSE203', name: 'Data Structures Lab', credits: 2, type: 'Lab', elective: false },
+    ],
+    3: [
+      { code: 'CSE301', name: 'Design & Analysis of Algorithms', credits: 4, type: 'Theory', elective: false },
+      { code: 'CSE302', name: 'Computer Organization & Architecture', credits: 4, type: 'Theory', elective: false },
+      { code: 'CSE303', name: 'Database Management Systems', credits: 4, type: 'Theory', elective: false },
+      { code: 'CSE304', name: 'DBMS Lab', credits: 2, type: 'Lab', elective: false },
+      { code: 'CSE305', name: 'Object Oriented Programming', credits: 3, type: 'Theory', elective: false },
+    ],
+    4: [
+      { code: 'CSE401', name: 'Operating Systems', credits: 4, type: 'Theory', elective: false },
+      { code: 'CSE402', name: 'Computer Networks', credits: 4, type: 'Theory', elective: false },
+      { code: 'CSE403', name: 'Software Engineering', credits: 3, type: 'Theory', elective: false },
+      { code: 'CSE404', name: 'OS & Networks Lab', credits: 2, type: 'Lab', elective: false },
+      { code: 'CSE451', name: 'Web Technologies', credits: 3, type: 'Theory', elective: true },
+    ],
+    5: [
+      { code: 'CSE501', name: 'Compiler Design', credits: 4, type: 'Theory', elective: false },
+      { code: 'CSE502', name: 'Machine Learning', credits: 4, type: 'Theory', elective: false },
+      { code: 'CSE503', name: 'Cloud Computing', credits: 3, type: 'Theory', elective: true },
+      { code: 'CSE504', name: 'ML Lab', credits: 2, type: 'Lab', elective: false },
+      { code: 'CSE551', name: 'Cybersecurity Fundamentals', credits: 3, type: 'Theory', elective: true },
+    ],
+    6: [
+      { code: 'CSE601', name: 'Artificial Intelligence', credits: 4, type: 'Theory', elective: false },
+      { code: 'CSE602', name: 'Big Data Analytics', credits: 3, type: 'Theory', elective: true },
+      { code: 'CSE603', name: 'Mobile Application Development', credits: 3, type: 'Theory', elective: true },
+      { code: 'CSE604', name: 'AI Lab', credits: 2, type: 'Lab', elective: false },
+    ],
+    7: [
+      { code: 'CSE701', name: 'Deep Learning', credits: 4, type: 'Theory', elective: false },
+      { code: 'CSE702', name: 'IoT Systems', credits: 3, type: 'Theory', elective: true },
+      { code: 'CSE703', name: 'Mini Project', credits: 2, type: 'Project', elective: false },
+    ],
+    8: [
+      { code: 'CSE801', name: 'Main Project', credits: 8, type: 'Project', elective: false },
+      { code: 'CSE802', name: 'Seminar', credits: 2, type: 'Theory', elective: false },
+    ],
+  },
+  ECE: {
+    1: [
+      { code: 'ECE101', name: 'Basic Electronics', credits: 4, type: 'Theory', elective: false },
+      { code: 'MAT101', name: 'Engineering Mathematics I', credits: 4, type: 'Theory', elective: false },
+      { code: 'ECE102', name: 'Electronics Lab', credits: 2, type: 'Lab', elective: false },
+    ],
+    2: [
+      { code: 'ECE201', name: 'Analog Circuits', credits: 4, type: 'Theory', elective: false },
+      { code: 'ECE202', name: 'Signals & Systems', credits: 4, type: 'Theory', elective: false },
+      { code: 'ECE203', name: 'Circuit Lab', credits: 2, type: 'Lab', elective: false },
+    ],
+    3: [
+      { code: 'ECE301', name: 'Digital Signal Processing', credits: 4, type: 'Theory', elective: false },
+      { code: 'ECE302', name: 'Communication Engineering', credits: 4, type: 'Theory', elective: false },
+      { code: 'ECE303', name: 'VLSI Design', credits: 3, type: 'Theory', elective: false },
+      { code: 'ECE304', name: 'DSP Lab', credits: 2, type: 'Lab', elective: false },
+    ],
+  },
+  ME: {
+    1: [
+      { code: 'ME101', name: 'Engineering Mechanics', credits: 4, type: 'Theory', elective: false },
+      { code: 'MAT101', name: 'Engineering Mathematics I', credits: 4, type: 'Theory', elective: false },
+      { code: 'ME102', name: 'Workshop Practice', credits: 2, type: 'Lab', elective: false },
+    ],
+    2: [
+      { code: 'ME201', name: 'Thermodynamics', credits: 4, type: 'Theory', elective: false },
+      { code: 'ME202', name: 'Fluid Mechanics', credits: 4, type: 'Theory', elective: false },
+      { code: 'ME203', name: 'Thermal Lab', credits: 2, type: 'Lab', elective: false },
+    ],
+    3: [
+      { code: 'ME301', name: 'Machine Design', credits: 4, type: 'Theory', elective: false },
+      { code: 'ME302', name: 'Manufacturing Processes', credits: 3, type: 'Theory', elective: false },
+      { code: 'ME303', name: 'CAD/CAM Lab', credits: 2, type: 'Lab', elective: false },
+    ],
+  },
+  CE: {
+    1: [
+      { code: 'CE101', name: 'Engineering Drawing', credits: 3, type: 'Theory', elective: false },
+      { code: 'CE102', name: 'Surveying I', credits: 4, type: 'Theory', elective: false },
+      { code: 'CE103', name: 'Surveying Lab', credits: 2, type: 'Lab', elective: false },
+    ],
+    3: [
+      { code: 'CE301', name: 'Structural Analysis', credits: 4, type: 'Theory', elective: false },
+      { code: 'CE302', name: 'Soil Mechanics', credits: 3, type: 'Theory', elective: false },
+      { code: 'CE303', name: 'Hydraulics Lab', credits: 2, type: 'Lab', elective: false },
+    ],
+  },
+  EEE: {
+    1: [
+      { code: 'EEE101', name: 'Circuit Theory', credits: 4, type: 'Theory', elective: false },
+      { code: 'MAT101', name: 'Engineering Mathematics I', credits: 4, type: 'Theory', elective: false },
+      { code: 'EEE102', name: 'Basic EE Lab', credits: 2, type: 'Lab', elective: false },
+    ],
+    3: [
+      { code: 'EEE301', name: 'Power Systems', credits: 4, type: 'Theory', elective: false },
+      { code: 'EEE302', name: 'Electrical Machines', credits: 4, type: 'Theory', elective: false },
+      { code: 'EEE303', name: 'Machines Lab', credits: 2, type: 'Lab', elective: false },
+    ],
+  },
+};
+
+const DEPT_NAMES = {
+  CSE: 'Computer Science & Engineering',
+  ECE: 'Electronics & Communication',
+  ME: 'Mechanical Engineering',
+  CE: 'Civil Engineering',
+  EEE: 'Electrical & Electronics',
+};
+
+function buildSQL(dept, sem) {
+  return `<span class="cm">-- Retrieve courses for department: ${dept}, semester: ${sem}</span>
+<span class="kw">SELECT</span>
+  c.course_code,
+  c.course_name,
+  c.credits,
+  c.course_type,
+  c.is_elective
+<span class="kw">FROM</span>
+  courses c
+<span class="kw">JOIN</span>
+  departments d <span class="kw">ON</span> c.dept_id = d.dept_id
+<span class="kw">WHERE</span>
+  d.dept_code = <span class="str">'${dept}'</span>
+  <span class="kw">AND</span> c.semester = <span class="num">${sem}</span>
+<span class="kw">ORDER BY</span>
+  c.is_elective <span class="kw">ASC</span>, c.course_code <span class="kw">ASC</span>;`;
+}
+
+function search() {
+  const dept = document.getElementById('dept').value;
+  const sem = document.getElementById('sem').value;
+  const resultsEl = document.getElementById('results');
+  const sqlPanel = document.getElementById('sqlPanel');
+  const sqlCode = document.getElementById('sqlCode');
+
+  if (!dept || !sem) {
+    resultsEl.innerHTML = `<div class="empty-state">⚠ Select both fields</div>`;
+    return;
+  }
+
+  sqlPanel.classList.add('visible');
+  sqlCode.innerHTML = buildSQL(dept, sem);
+
+  fetch(`http://localhost:8080/dbms/search.php?dept=${dept}&sem=${sem}`)
+    .then(res => res.json())
+    .then(rows => {
+
+      if (rows.error) {
+        resultsEl.innerHTML = `<div class="empty-state">${rows.error}</div>`;
+        return;
+      }
+
+      if (rows.length === 0) {
+        resultsEl.innerHTML = `<div class="empty-state">No courses found</div>`;
+        return;
+      }
+
+      let html = `<div class="course-grid">`;
+
+      rows.forEach(r => {
+        html += `
+          <div class="course-card">
+            <div>
+              <div class="course-code">${r.course_code}</div>
+              <div class="course-name">${r.course_name}</div>
+              <div class="course-meta">
+                <span class="tag tag-type">${r.course_type}</span>
+                <span class="tag tag-credits">${r.credits} cr</span>
+                ${r.is_elective ? '<span class="tag tag-elective">Elective</span>' : ''}
+              </div>
+            </div>
+          </div>`;
+      });
+
+      html += `</div>`;
+      resultsEl.innerHTML = html;
+    })
+    .catch(err => {
+      resultsEl.innerHTML = `<div class="empty-state">Server error</div>`;
+      console.error(err);
+    });
+}
+</script>
+</body>
+</html>
