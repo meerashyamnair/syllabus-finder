@@ -153,7 +153,19 @@ INSERT INTO courses (course_code, course_name, dept_id, semester, credits, cours
   ('20CST434', 'Parellel Computing',                 1, 8, 3, 'Theory', FALSE),
   ('20CST444', 'Data Compression Technique',                 1, 8, 3, 'Theory', FALSE),
   ('20CST454', 'Unified Extended Firmware Interface',                 1, 8, 3, 'Theory', FALSE),
-  ('20CST464', 'Data Mining',                 1, 8, 3, 'Theory', FALSE);
+  ('20CST464', 'Data Mining',                 1, 8, 3, 'Theory', FALSE),
+
+  ('24BST1101', 'Linear Algebra and Calculus',        2, 1, 4, 'Theory', FALSE),
+  ('24BSE1002B', 'Applied Physics for Engineering',        2, 1, 4, 'Theory', FALSE),
+  ('24EST1004J', 'Semiconductor Physics and Devices',        2, 1, 4, 'Theory', FALSE),
+  ('24EST1005A', 'Basics of Mechanical and Civil Engineering',        2, 1, 4, 'Theory', FALSE),
+  ('24HML1106', 'Effective Spoken English',        2, 1, 1, 'Theory', FALSE),
+  ('24ESE1107', 'Python Programming',        2, 1, 1, 'Theory', FALSE),
+  ('24BSTM009', 'Engineering Biology',                   2, 1, 1, 'Theory', TRUE),
+  ('24HMTM008', 'Universal Human Values',                   2, 1, 1, 'Theory', TRUE),
+  ('24ESL1010A', 'Mechanical and Civil Engineering Workshop',                   2, 1, 1, 'Lab', FALSE);
+
+
 -- ============================================================
 --  THE CORE SELECT QUERY (used in the app)
 -- ============================================================
